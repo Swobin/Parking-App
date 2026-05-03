@@ -394,6 +394,7 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _routeToCarParkByName(String name) async {
     setState(() {
       _isRouting = true;

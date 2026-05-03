@@ -6,6 +6,7 @@ frontend/linux/flutter/generated_plugins.cmake
 frontend/macos/Podfile
 frontend/windows/flutter/generated_plugin_registrant.h
 backend/.env
+/.env
 build/
 .dart_tool/
 .flutter-plugins
