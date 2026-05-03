@@ -84,7 +84,11 @@ CREATE TABLE UserVehicles (
 CREATE TABLE Reviews (
     review_id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    review INT NOT NULL CHECK (review >= 0 AND review <= 5)
+    review INT NOT NULL CHECK (review >= 0 AND review <= 5),
+    comment TEXT NOT NULL,
+    user_email VARCHAR(255) NOT NULL,
+    user_name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- =====================================================

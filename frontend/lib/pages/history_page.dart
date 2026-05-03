@@ -1,15 +1,19 @@
+import 'package:parkingapp/user_addition/dummy_auth.dart';
+import 'package:parkingapp/user_addition/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class Review {
-  final String userName;
+  final String reviewerName;
+  final String carParkName;
   final double rating;
   final String comment;
   final DateTime date;
 
   Review({
-    required this.userName,
+    required this.reviewerName,
+    required this.carParkName,
     required this.rating,
     required this.comment,
     required this.date,
@@ -17,7 +21,9 @@ class Review {
 }
 
 class HistoryTabContent extends StatefulWidget {
-  const HistoryTabContent({super.key});
+  final AuthSession session;
+
+  const HistoryTabContent({super.key, required this.session});
 
   @override
   State<HistoryTabContent> createState() => _HistoryTabContentState();
@@ -39,7 +45,7 @@ class _HistoryTabContentState extends State<HistoryTabContent> {
   Future<void> _loadReviews() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/search-all'),
+        Uri.parse('http://localhost:8080/review'),
       );
 
       if (response.statusCode == 200) {
@@ -48,13 +54,16 @@ class _HistoryTabContentState extends State<HistoryTabContent> {
 
         setState(() {
           _pastReviews = reviewsData
-              .where((item) => item['review'] != null && item['title'] != null)
               .map((item) {
+            final createdAtValue = item['created_at'];
+            final parsedDate = createdAtValue is String ? DateTime.tryParse(createdAtValue) : null;
+
                 return Review(
-                  userName: item['title'] ?? 'Unknown',
+              reviewerName: item['user_name'] ?? widget.session.name,
+              carParkName: item['title'] ?? 'Unknown car park',
                   rating: (item['review'] ?? 0).toDouble(),
-                  comment: item['title'] ?? '',
-                  date: DateTime.now(),
+              comment: item['comment'] ?? '',
+              date: parsedDate ?? DateTime.now(),
                 );
               })
               .toList();
@@ -96,7 +105,7 @@ class _HistoryTabContentState extends State<HistoryTabContent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Parking Reviews'), centerTitle: true),
+      appBar: AppBar(title: const Text('All Reviews'), centerTitle: true),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -158,6 +167,11 @@ class _HistoryTabContentState extends State<HistoryTabContent> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Text(
+                              review.carParkName,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -165,7 +179,7 @@ class _HistoryTabContentState extends State<HistoryTabContent> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      review.userName,
+                                      review.reviewerName,
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyMedium

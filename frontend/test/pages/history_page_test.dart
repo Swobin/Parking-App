@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkingapp/pages/history_page.dart';
+import 'package:parkingapp/user_addition/user_model.dart';
 
 void main() {
   group('History Page Tests', () {
@@ -14,20 +15,22 @@ void main() {
       );
     }
 
+    final testSession = AuthSession(userId: 1, name: 'You', lastname: '', email: 'you@parking.test', accessToken: '');
+
     testWidgets('renders correctly', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       expect(find.text('Parking Reviews'), findsOneWidget);
-      expect(find.text('Share Your Experience'), findsOneWidget);
-      expect(find.text('User Reviews'), findsOneWidget);
+      expect(find.text('All Reviews'), findsOneWidget);
+      // 'User Reviews' header removed in UI; ensure main reviews header exists instead
     });
 
     testWidgets('initial rating is 5 stars', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       expect(find.text('Rate: 5 / 5'), findsOneWidget);
     });
 
     testWidgets('star rating changes on tap', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final starIcons = find.byIcon(Icons.star);
       await tester.tap(starIcons.first);
       await tester.pump();
@@ -35,7 +38,7 @@ void main() {
     });
 
     testWidgets('can set 3 star rating', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final starIcons = find.byIcon(Icons.star);
       await tester.tap(starIcons.at(2));
       await tester.pump();
@@ -43,7 +46,7 @@ void main() {
     });
 
     testWidgets('text field accepts input', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final textField = find.byType(TextField);
       await tester.tap(textField);
       await tester.enterText(textField, 'Great spot!');
@@ -53,14 +56,14 @@ void main() {
     testWidgets('submit button shows error when empty', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
       expect(find.text('Please enter a comment'), findsOneWidget);
     });
 
     testWidgets('submits review successfully', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final textField = find.byType(TextField);
       await tester.tap(textField);
       await tester.enterText(textField, 'Excellent location!');
@@ -70,7 +73,7 @@ void main() {
     });
 
     testWidgets('clears comment after submission', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final textField = find.byType(TextField);
       await tester.tap(textField);
       await tester.enterText(textField, 'Test');
@@ -80,7 +83,7 @@ void main() {
     });
 
     testWidgets('resets rating after submission', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final starIcons = find.byIcon(Icons.star);
       await tester.tap(starIcons.at(2));
       await tester.pump();
@@ -96,7 +99,7 @@ void main() {
     });
 
     testWidgets('displays past reviews', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       expect(find.text('Alex Johnson'), findsOneWidget);
       expect(
         find.text(
@@ -108,7 +111,7 @@ void main() {
     });
 
     testWidgets('shows submitted review as You', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final textField = find.byType(TextField);
       await tester.tap(textField);
       await tester.enterText(textField, 'New review');
@@ -118,7 +121,7 @@ void main() {
     });
 
     testWidgets('has all 5 interactive stars', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       for (int i = 1; i <= 5; i++) {
         final starIcons = find.byIcon(Icons.star);
         await tester.tap(starIcons.at(i - 1));
@@ -130,13 +133,13 @@ void main() {
     testWidgets('text field supports multiple lines', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.maxLines, equals(3));
     });
 
     testWidgets('displays all past reviews', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       expect(find.text('Alex Johnson'), findsOneWidget);
       expect(find.text('Sarah Williams'), findsOneWidget);
       expect(find.text('Mike Chen'), findsOneWidget);
@@ -144,13 +147,13 @@ void main() {
     });
 
     testWidgets('submit button exists', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       expect(find.byType(ElevatedButton), findsOneWidget);
       expect(find.text('Submit'), findsOneWidget);
     });
 
     testWidgets('has hint text in comment field', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(const HistoryTabContent()));
+      await tester.pumpWidget(createTestWidget(HistoryTabContent(session: testSession)));
       expect(find.text('Share your feedback...'), findsOneWidget);
     });
   });

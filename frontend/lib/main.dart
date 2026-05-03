@@ -221,6 +221,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     final pages = [
       HomePage(
+        session: widget.session,
         remainingTime: _formatDuration(_remainingDuration),
         progress: _totalDuration.inSeconds == 0
             ? 0.0
@@ -235,7 +236,7 @@ class _MainNavigationState extends State<MainNavigation> {
         },
       ),
       const search.SearchPage(),
-      const HistoryPageWrapper(),
+      HistoryPageWrapper(session: widget.session),
       ProfilePageWrapper(session: widget.session),
       SettingsTabContent(onLogout: widget.onLogout),
     ];
@@ -263,6 +264,7 @@ class _MainNavigationState extends State<MainNavigation> {
 }
 
 class HomePage extends StatefulWidget {
+  final AuthSession session;
   final String remainingTime;
   final double progress;
   final bool isSessionActive;
@@ -275,6 +277,7 @@ class HomePage extends StatefulWidget {
 
   const HomePage({
     super.key,
+    required this.session,
     required this.remainingTime,
     required this.progress,
     required this.isSessionActive,
@@ -552,6 +555,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _showReviewSheet() async {
     double rating = 5;
+    final commentController = TextEditingController();
     String? commentError;
 
     final targetCarPark =
@@ -630,6 +634,24 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      TextField(
+                        controller: commentController,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          labelText: 'Comment',
+                          hintText: 'Tell others what stood out about this car park',
+                          border: const OutlineInputBorder(),
+                          errorText: commentError,
+                        ),
+                        onChanged: (value) {
+                          if (commentError != null && value.trim().isNotEmpty) {
+                            setSheetState(() {
+                              commentError = null;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
@@ -644,10 +666,21 @@ class _HomePageState extends State<HomePage> {
                               return;
                             }
 
+                            final comment = commentController.text.trim();
+                            if (comment.isEmpty) {
+                              setSheetState(() {
+                                commentError = 'Please enter a comment';
+                              });
+                              return;
+                            }
+
                             try {
                               final reviewData = {
                                 'title': targetCarPark.name,
                                 'review': rating.toInt(),
+                                'comment': comment,
+                                'user_email': widget.session.email,
+                                'user_name': widget.session.name,
                               };
 
                               final response = await http.post(
@@ -698,6 +731,8 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
+
+    commentController.dispose();
   }
 
   @override
@@ -1069,11 +1104,13 @@ class PremiumCard extends StatelessWidget {
 
 // Wrapper for HistoryPage
 class HistoryPageWrapper extends StatelessWidget {
-  const HistoryPageWrapper({super.key});
+  final AuthSession session;
+
+  const HistoryPageWrapper({super.key, required this.session});
 
   @override
   Widget build(BuildContext context) {
-    return const HistoryTabContent();
+    return HistoryTabContent(session: session);
   }
 }
 
