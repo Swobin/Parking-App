@@ -816,6 +816,11 @@ class _SearchPageState extends State<SearchPage> {
                                     width: 3,
                                   ),
                                 ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
                               ),
                             ),
                             Marker(
@@ -832,7 +837,7 @@ class _SearchPageState extends State<SearchPage> {
                                   ),
                                 ),
                                 child: const Icon(
-                                  Icons.navigation,
+                                  Icons.location_on,
                                   color: Colors.white,
                                   size: 20,
                                 ),
