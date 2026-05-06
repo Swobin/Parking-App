@@ -35,9 +35,12 @@ def default_car_parks():
         }, 201
 
 carparks = [
-    {"name": "gunwharf quays", "spaces": 500, "location": "-1.1062,50.7954621"},
-    {"name": "Portaland car park", "spaces": 50, "location": "40.712776,-74.005974"},
-    {"name": "multi-storey", "spaces": 200, "location": "40.641311,-73.778139"},
+    {"name": "gunwharf quays", "spaces": 500, "location": "50.796371295864176, -1.105699549149126"},
+    {"name": "Southsea car park", "spaces": 200, "location": "50.78297038437193, -1.068130813480475"},
+    {"name": "Fratton station car park", "spaces": 150, "location": "50.7960469693931, -1.068645797867113"},
+    {"name": "Cosham town centre", "spaces": 180, "location": "50.84190601263039, -1.0815741730000212"},
+    {"name": "Portaland car park", "spaces": 50, "location": "50.7991655930562, -1.0990798168572316"},
+    {"name": "multi-storey", "spaces": 200, "location": "50.789373484485104, -1.0746539455489148"},
 ]
 
 def default_user():
