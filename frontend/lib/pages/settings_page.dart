@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import '../utils/theme_manager.dart';
 
 // Settings Tab Content
 class SettingsTabContent extends StatefulWidget {
@@ -16,25 +15,6 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
   bool _notificationsEnabled = true;
   bool _locationEnabled = true;
   bool _autoExtendParking = false;
-  final ThemeManager _themeManager = ThemeManager();
-
-  @override
-  void initState() {
-    super.initState();
-    _themeManager.addListener(_onThemeChanged);
-  }
-
-  @override
-  void dispose() {
-    _themeManager.removeListener(_onThemeChanged);
-    super.dispose();
-  }
-
-  void _onThemeChanged() {
-    setState(() {
-      // Rebuild when theme changes
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,15 +52,6 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
           // App Preferences Section
           _buildSectionHeader('App Preferences'),
           _buildSwitchTile(
-            icon: Icons.dark_mode_outlined,
-            title: 'Dark Mode',
-            subtitle: 'Enable dark theme',
-            value: _themeManager.isDarkMode,
-            onChanged: (value) {
-              _themeManager.setDarkMode(value);
-            },
-          ),
-          _buildSwitchTile(
             icon: Icons.location_on_outlined,
             title: 'Location Services',
             subtitle: 'Allow app to use your location',
@@ -100,9 +71,7 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
             title: 'Help & Support',
             subtitle: 'Get help with the app',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Help & Support clicked')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Help & Support clicked')));
             },
           ),
           _buildSettingsTile(
@@ -110,9 +79,7 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
             title: 'Privacy Policy',
             subtitle: 'Read our privacy policy',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Privacy Policy clicked')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Privacy Policy clicked')));
             },
           ),
           _buildSettingsTile(
@@ -120,9 +87,7 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
             title: 'Terms of Service',
             subtitle: 'Read our terms of service',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Terms of Service clicked')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Terms of Service clicked')));
             },
           ),
           _buildSettingsTile(
@@ -146,31 +111,22 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text(
-                'Logout',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              child: const Text('Logout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: OutlinedButton(
               onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginPage()));
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF008752),
                 side: const BorderSide(color: Color(0xFF008752)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text(
                 'DEV MODE ONLY: ACCESS LOGIN PAGE',
@@ -190,12 +146,7 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey[600],
-          letterSpacing: 0.5,
-        ),
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey[600], letterSpacing: 0.5),
       ),
     );
   }
@@ -260,12 +211,7 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
               Text('All rights reserved.'),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
         );
       },
     );
@@ -279,17 +225,12 @@ class _SettingsTabContentState extends State<SettingsTabContent> {
           title: const Text('Logout'),
           content: const Text('Are you sure you want to logout?'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 widget.onLogout?.call();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out successfully')),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out successfully')));
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Logout'),
