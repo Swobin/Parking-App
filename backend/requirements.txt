@@ -5,3 +5,5 @@ marshmallow
 PyJWT
 supabase
 python-dotenv
+pytest
+pytest-cov
