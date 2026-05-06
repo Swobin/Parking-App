@@ -639,7 +639,8 @@ class _HomePageState extends State<HomePage> {
                         maxLines: 4,
                         decoration: InputDecoration(
                           labelText: 'Comment',
-                          hintText: 'Tell others what stood out about this car park',
+                          hintText:
+                              'Tell others what stood out about this car park',
                           border: const OutlineInputBorder(),
                           errorText: commentError,
                         ),
@@ -679,8 +680,6 @@ class _HomePageState extends State<HomePage> {
                                 'title': targetCarPark.name,
                                 'review': rating.toInt(),
                                 'comment': comment,
-                                'user_email': widget.session.email,
-                                'user_name': widget.session.name,
                               };
 
                               final response = await http.post(
