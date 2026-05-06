@@ -280,7 +280,7 @@ class _SearchPageState extends State<SearchPage> {
     if (_isSearching || _isSearchingCarParks || _isRouting || _isLocating) {
       return;
     }
-    await _searchLocation();
+    await _searchCarParksNearby(query: '');
   }
 
   Future<void> _searchLocation() async {
@@ -341,9 +341,9 @@ class _SearchPageState extends State<SearchPage> {
       final didLoadRoute = await _loadRoute(_startLocation, newLocation);
       if (didLoadRoute) {
         setState(() {
-          _followUser = true;
+          _followUser = false;
         });
-        _mapController.move(_startLocation, 16);
+        _mapController.move(newLocation, 14);
         await _speakNavigationIntro();
       }
     } catch (_) {
@@ -376,9 +376,9 @@ class _SearchPageState extends State<SearchPage> {
       final didLoadRoute = await _loadRoute(_startLocation, newLocation);
       if (didLoadRoute) {
         setState(() {
-          _followUser = true;
+          _followUser = false;
         });
-        _mapController.move(_startLocation, 16);
+        _mapController.move(newLocation, 14);
         await _speakNavigationIntro();
       }
     } catch (_) {
@@ -438,9 +438,9 @@ class _SearchPageState extends State<SearchPage> {
       final didLoadRoute = await _loadRoute(_startLocation, newLocation);
       if (didLoadRoute) {
         setState(() {
-          _followUser = true;
+          _followUser = false;
         });
-        _mapController.move(_startLocation, 16);
+        _mapController.move(newLocation, 14);
         await _speakNavigationIntro();
       }
     } catch (_) {
@@ -456,7 +456,7 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  Future<void> _searchCarParksNearby() async {
+  Future<void> _searchCarParksNearby({String query = ''}) async {
     if (_isSearchingCarParks) {
       return;
     }
@@ -468,7 +468,7 @@ class _SearchPageState extends State<SearchPage> {
 
     try {
       final results = await _searchService.searchInDistanceRange(
-        query: '', // Empty query to get all car parks in range
+        query: query,
         longitude: _selectedLocation.longitude,
         latitude: _selectedLocation.latitude,
         minDistanceKm: _minDistance,
@@ -516,82 +516,78 @@ class _SearchPageState extends State<SearchPage> {
         'steps': 'true',
       });
 
-      final response = await http.get(uri);
-      if (response.statusCode != 200) {
-        throw Exception('Route request failed: ${response.statusCode}');
-      }
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
 
-      final Map<String, dynamic> data =
-          jsonDecode(response.body) as Map<String, dynamic>;
-      final List<dynamic> routes = data['routes'] as List<dynamic>;
-      if (routes.isEmpty) {
-        throw Exception('No route available');
-      }
-
-      final Map<String, dynamic> route = routes.first as Map<String, dynamic>;
-      final Map<String, dynamic> geometry =
-          route['geometry'] as Map<String, dynamic>;
-      final List<dynamic> coordinates =
-          geometry['coordinates'] as List<dynamic>;
-      final points = coordinates.map((dynamic item) {
-        final pair = item as List<dynamic>;
-        return LatLng((pair[1] as num).toDouble(), (pair[0] as num).toDouble());
-      }).toList();
-
-      final List<String> parsedDirections = [];
-      final List<_NavigationStep> parsedNavigationSteps = [];
-      final List<dynamic> legs = route['legs'] as List<dynamic>;
-      if (legs.isNotEmpty) {
-        final Map<String, dynamic> firstLeg =
-            legs.first as Map<String, dynamic>;
-        final List<dynamic> steps = firstLeg['steps'] as List<dynamic>;
-        for (final stepData in steps) {
-          final step = stepData as Map<String, dynamic>;
-          final instruction = _buildDirection(step);
-          parsedDirections.add(instruction);
-
-          final maneuver = (step['maneuver'] as Map<String, dynamic>?) ?? {};
-          final location = maneuver['location'] as List<dynamic>?;
-          if (location != null && location.length == 2) {
-            parsedNavigationSteps.add(
-              _NavigationStep(
-                instruction: instruction,
-                maneuverPoint: LatLng(
-                  (location[1] as num).toDouble(),
-                  (location[0] as num).toDouble(),
-                ),
-              ),
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        final List<dynamic> routes = data['routes'] as List<dynamic>;
+        if (routes.isNotEmpty) {
+          final Map<String, dynamic> route =
+              routes.first as Map<String, dynamic>;
+          final Map<String, dynamic> geometry =
+              route['geometry'] as Map<String, dynamic>;
+          final List<dynamic> coordinates =
+              geometry['coordinates'] as List<dynamic>;
+          final points = coordinates.map((dynamic item) {
+            final pair = item as List<dynamic>;
+            return LatLng(
+              (pair[1] as num).toDouble(),
+              (pair[0] as num).toDouble(),
             );
+          }).toList();
+
+          final List<String> parsedDirections = [];
+          final List<_NavigationStep> parsedNavigationSteps = [];
+          final List<dynamic> legs = route['legs'] as List<dynamic>;
+          if (legs.isNotEmpty) {
+            final Map<String, dynamic> firstLeg =
+                legs.first as Map<String, dynamic>;
+            final List<dynamic> steps = firstLeg['steps'] as List<dynamic>;
+            for (final stepData in steps) {
+              final step = stepData as Map<String, dynamic>;
+              final instruction = _buildDirection(step);
+              parsedDirections.add(instruction);
+
+              final maneuver =
+                  (step['maneuver'] as Map<String, dynamic>?) ?? {};
+              final location = maneuver['location'] as List<dynamic>?;
+              if (location != null && location.length == 2) {
+                parsedNavigationSteps.add(
+                  _NavigationStep(
+                    instruction: instruction,
+                    maneuverPoint: LatLng(
+                      (location[1] as num).toDouble(),
+                      (location[0] as num).toDouble(),
+                    ),
+                  ),
+                );
+              }
+            }
           }
+
+          setState(() {
+            _routePoints = points;
+            _directions = parsedDirections;
+            _navigationSteps = parsedNavigationSteps;
+            _routeDistanceMeters = (route['distance'] as num).toDouble();
+            _routeDurationSeconds = (route['duration'] as num).toDouble();
+            _nextVoiceStepIndex = 0;
+            _arrivalAnnounced = false;
+            _currentStepPromptStage = 0;
+            _lastDistanceToStep = null;
+          });
+          return true;
         }
       }
 
-      setState(() {
-        _routePoints = points;
-        _directions = parsedDirections;
-        _navigationSteps = parsedNavigationSteps;
-        _routeDistanceMeters = (route['distance'] as num).toDouble();
-        _routeDurationSeconds = (route['duration'] as num).toDouble();
-        _nextVoiceStepIndex = 0;
-        _arrivalAnnounced = false;
-        _currentStepPromptStage = 0;
-        _lastDistanceToStep = null;
-      });
+      // Fallback: if OSRM fails, just draw a direct line between points
+      _drawSimpleRoute(from, to);
       return true;
     } catch (_) {
-      setState(() {
-        _routePoints = const [];
-        _directions = const [];
-        _navigationSteps = const [];
-        _routeDistanceMeters = 0;
-        _routeDurationSeconds = 0;
-        _nextVoiceStepIndex = 0;
-        _arrivalAnnounced = false;
-        _currentStepPromptStage = 0;
-        _lastDistanceToStep = null;
-        _errorMessage = 'Could not generate directions for this destination.';
-      });
-      return false;
+      // Fallback: draw a simple line if routing service fails
+      _drawSimpleRoute(from, to);
+      return true;
     } finally {
       if (mounted) {
         setState(() {
@@ -599,6 +595,26 @@ class _SearchPageState extends State<SearchPage> {
         });
       }
     }
+  }
+
+  void _drawSimpleRoute(LatLng from, LatLng to) {
+    setState(() {
+      _routePoints = [from, to];
+      _directions = const [];
+      _navigationSteps = const [];
+      _routeDistanceMeters = Geolocator.distanceBetween(
+        from.latitude,
+        from.longitude,
+        to.latitude,
+        to.longitude,
+      );
+      _routeDurationSeconds = 0;
+      _nextVoiceStepIndex = 0;
+      _arrivalAnnounced = false;
+      _currentStepPromptStage = 0;
+      _lastDistanceToStep = null;
+      _errorMessage = null;
+    });
   }
 
   String _buildDirection(Map<String, dynamic> step) {
