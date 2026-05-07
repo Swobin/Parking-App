@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 from car_park_manager import CarPark
 from search_manager import SearchManager, SearchManagerAll
-from user_manager import UserResource
+from user_manager import UserResource, VehicleResource
 from authentication_manager import LoginResource, SignupResource
 from review_manager import ReviewManager
 from session_manager import ParkingSessionManager
@@ -19,6 +19,7 @@ api = Api(server)
 api.add_resource(CarPark, '/car-park') # GET car park
 api.add_resource(SearchManager, '/search') # GET search query
 api.add_resource(UserResource, '/users/<string:email>') # GET read, PUT update
+api.add_resource(VehicleResource, '/users/<string:email>/vehicle') # POST add vehicle, DELETE delete vehicle
 api.add_resource(LoginResource, "/login") # POST login
 api.add_resource(SignupResource, "/signup") # POST create account
 api.add_resource(ReviewManager, "/review") # POST add review, GET get reviews for specific car park, DELETE

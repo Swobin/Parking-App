@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:parkingapp/user_addition/dummy_auth.dart';
 import 'package:parkingapp/user_addition/user_add.dart';
 import 'package:parkingapp/user_addition/user_model.dart';
 
@@ -103,7 +102,7 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
 
   Future<void> _loadDummyProfile() async {
     try {
-      final profile = await getDummyUserProfile(email: widget.session.email);
+      final profile = await getUserProfile(email: widget.session.email);
       if (!mounted) {
         return;
       }
@@ -119,12 +118,11 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
                 'nickname': vehicle.registration,
                 'vrm': vehicle.registration,
                 'type': vehicle.type,
+                'vehicle_id': vehicle.vehicleId.toString(),
               },
             ),
           );
-        _paymentMethods
-          ..clear()
-          ..addAll(getDummyPaymentMethods(email: widget.session.email));
+        _paymentMethods.clear();
       });
     } catch (_) {
       if (!mounted) {
@@ -563,6 +561,7 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
     final nicknameController = TextEditingController();
     final vrmController = TextEditingController();
     String vehicleType = 'Personal';
+    bool isAdding = false;
 
     showDialog(
       context: context,
@@ -613,27 +612,65 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: isAdding ? null : () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                if (nicknameController.text.isNotEmpty &&
-                    vrmController.text.isNotEmpty) {
-                  setState(() {
-                    _vehicles.add({
-                      'nickname': nicknameController.text,
-                      'vrm': vrmController.text.toUpperCase(),
-                      'type': vehicleType,
-                    });
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Vehicle added successfully')),
-                  );
-                }
-              },
-              child: const Text('Add'),
+              onPressed: isAdding
+                  ? null
+                  : () async {
+                      if (nicknameController.text.isNotEmpty &&
+                          vrmController.text.isNotEmpty) {
+                        setDialogState(() {
+                          isAdding = true;
+                        });
+
+                        try {
+                          final response = await addVehicle(
+                            email: _userEmail,
+                            registration: vrmController.text,
+                            type: vehicleType,
+                          );
+
+                          if (!mounted) return;
+
+                          setState(() {
+                            _vehicles.add({
+                              'nickname': nicknameController.text,
+                              'vrm': vrmController.text.toUpperCase(),
+                              'type': vehicleType,
+                              'vehicle_id':
+                                  response['vehicle_id']?.toString() ?? '',
+                            });
+                          });
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vehicle added successfully'),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                e.toString().replaceFirst('Exception: ', ''),
+                              ),
+                            ),
+                          );
+                          setDialogState(() {
+                            isAdding = false;
+                          });
+                        }
+                      }
+                    },
+              child: isAdding
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Add'),
             ),
           ],
         ),
@@ -730,14 +767,31 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _vehicles.remove(vehicle);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vehicle deleted successfully')),
-              );
+            onPressed: () async {
+              try {
+                final vehicleId =
+                    int.tryParse(vehicle['vehicle_id'] ?? '0') ?? 0;
+                if (vehicleId > 0) {
+                  await deleteVehicle(email: _userEmail, vehicleId: vehicleId);
+                }
+
+                if (!mounted) return;
+
+                setState(() {
+                  _vehicles.remove(vehicle);
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vehicle deleted successfully')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString().replaceFirst('Exception: ', '')),
+                  ),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),

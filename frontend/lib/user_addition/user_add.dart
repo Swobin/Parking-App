@@ -62,10 +62,7 @@ Future<AuthSession> loginUser({
   final response = await http.post(
     uri,
     headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'email': email,
-      'password': password,
-    }),
+    body: jsonEncode({'email': email, 'password': password}),
   );
 
   final body = response.body.isNotEmpty
@@ -131,4 +128,59 @@ Future<void> updateUserProfile({
   throw Exception(
     'Failed to update user: ${response.statusCode} ${response.body}',
   );
+}
+
+Future<Map<String, dynamic>> addVehicle({
+  required String email,
+  required String registration,
+  required String type,
+}) async {
+  final encodedEmail = Uri.encodeComponent(email.trim());
+  final uri = Uri.parse('$_baseUrl/users/$encodedEmail/vehicle');
+
+  final response = await http.post(
+    uri,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'registration': registration.trim().toUpperCase(),
+      'type': type,
+    }),
+  );
+
+  if (response.statusCode == 201 || response.statusCode == 200) {
+    final body = response.body.isNotEmpty
+        ? jsonDecode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+    return (body['vehicle'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+  }
+
+  final body = response.body.isNotEmpty
+      ? jsonDecode(response.body) as Map<String, dynamic>
+      : <String, dynamic>{};
+  final message = (body['error'] as String?) ?? 'Failed to add vehicle';
+  throw Exception(message);
+}
+
+Future<void> deleteVehicle({
+  required String email,
+  required int vehicleId,
+}) async {
+  final encodedEmail = Uri.encodeComponent(email.trim());
+  final uri = Uri.parse('$_baseUrl/users/$encodedEmail/vehicle');
+
+  final response = await http.delete(
+    uri,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'vehicle_id': vehicleId}),
+  );
+
+  if (response.statusCode == 200) {
+    return;
+  }
+
+  final body = response.body.isNotEmpty
+      ? jsonDecode(response.body) as Map<String, dynamic>
+      : <String, dynamic>{};
+  final message = (body['error'] as String?) ?? 'Failed to delete vehicle';
+  throw Exception(message);
 }

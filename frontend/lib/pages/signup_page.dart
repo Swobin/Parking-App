@@ -49,7 +49,7 @@ class _SignupPageState extends State<SignupPage> {
         request: CreateUserRequest(
           name: name,
           lastname: lastname,
-          email: email,
+          email: email.toLowerCase(),
           password: password,
         ),
       );
