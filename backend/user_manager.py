@@ -14,6 +14,7 @@ def get_user(email):
         user = auth_getUser(email=email)
         if user and user.get("result") is True:
             supabase = get_database_connection()
+            print(user.get("user_id"))
             vehicle_response = (
                 supabase.table("vehicle")
                 .select("vehicle_id, registration, type")
@@ -21,6 +22,7 @@ def get_user(email):
                 .order("vehicle_id", desc=False)
                 .execute()
             )
+            print(f"Fetched vehicles for user {email}: {vehicle_response.data}")
             vehicles = vehicle_response.data if vehicle_response and vehicle_response.data else []
             payment_methods = []
 
@@ -121,6 +123,14 @@ def add_vehicle(email, registration, vehicle_type):
             }
         ).execute()
 
+        if hasattr(response, 'error') and response.error:
+            print(f"Error adding vehicle: {response.error}")
+            return {
+                "process": "Add Vehicle",
+                "result": False,
+                "error": str(response.error),
+            }, 400
+
         if response.data:
             print(f"Added vehicle {registration} for user {email}")
             return {
@@ -197,7 +207,7 @@ def update_user(name, lastname, email=None, updated_email=None, vehicles=None, p
         update_payload["email"] = updated_email
 
     response = (
-        supabase.table("user")
+        supabase.table("User")
         .update(update_payload)
         .eq("email", email)
         .execute()
