@@ -60,7 +60,11 @@ class MainNavigation extends StatefulWidget {
   final AuthSession session;
   final VoidCallback onLogout;
 
-  const MainNavigation({super.key, required this.session, required this.onLogout});
+  const MainNavigation({
+    super.key,
+    required this.session,
+    required this.onLogout,
+  });
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -69,6 +73,7 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
   static const Duration _extensionDuration = Duration(minutes: 30);
+  static const Duration _maxSessionDuration = Duration(hours: 24);
 
   late Duration _remainingDuration;
   late Duration _totalDuration;
@@ -106,7 +111,8 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_sessionState != ParkingSessionState.active || _remainingDuration == Duration.zero) {
+      if (_sessionState != ParkingSessionState.active ||
+          _remainingDuration == Duration.zero) {
         _timer?.cancel();
         return;
       }
@@ -140,8 +146,13 @@ class _MainNavigationState extends State<MainNavigation> {
       return;
     }
 
+    final newDuration = _remainingDuration + _extensionDuration;
+    if (newDuration > _maxSessionDuration) {
+      return;
+    }
+
     setState(() {
-      _remainingDuration += _extensionDuration;
+      _remainingDuration = newDuration;
       _totalDuration += _extensionDuration;
       if (_remainingDuration > Duration.zero && _timer == null) {
         _startTimer();
@@ -155,9 +166,14 @@ class _MainNavigationState extends State<MainNavigation> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Cancel stay?'),
-          content: const Text('Are you sure you want to cancel this parking session?'),
+          content: const Text(
+            'Are you sure you want to cancel this parking session?',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('No')),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('No'),
+            ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -193,7 +209,11 @@ class _MainNavigationState extends State<MainNavigation> {
       HomePage(
         session: widget.session,
         remainingTime: _formatDuration(_remainingDuration),
-        progress: _totalDuration.inSeconds == 0 ? 0.0 : _remainingDuration.inSeconds / _totalDuration.inSeconds,
+        remainingDuration: _remainingDuration,
+        maxSessionDuration: _maxSessionDuration,
+        progress: _totalDuration.inSeconds == 0
+            ? 0.0
+            : _remainingDuration.inSeconds / _totalDuration.inSeconds,
         isSessionActive: _isSessionActive,
         canReviewSession: _canReviewSession,
         selectedCarPark: _activeCarPark,
@@ -221,7 +241,10 @@ class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
     );
@@ -231,18 +254,23 @@ class _MainNavigationState extends State<MainNavigation> {
 class HomePage extends StatefulWidget {
   final AuthSession session;
   final String remainingTime;
+  final Duration remainingDuration;
+  final Duration maxSessionDuration;
   final double progress;
   final bool isSessionActive;
   final bool canReviewSession;
   final CarPark? selectedCarPark;
   final VoidCallback onCancelSession;
   final VoidCallback onAddThirtyMinutes;
-  final Future<void> Function(CarPark carPark, Duration duration) onStartSession;
+  final Future<void> Function(CarPark carPark, Duration duration)
+  onStartSession;
 
   const HomePage({
     super.key,
     required this.session,
     required this.remainingTime,
+    required this.remainingDuration,
+    required this.maxSessionDuration,
     required this.progress,
     required this.isSessionActive,
     required this.canReviewSession,
@@ -258,7 +286,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   static const double _allCarParksRadiusKm = 20000.0;
-  final SearchService _searchService = SearchService(baseUrl: 'http://localhost:8080');
+  final SearchService _searchService = SearchService(
+    baseUrl: 'http://localhost:8080',
+  );
   bool _isLoadingNearby = false;
   String? _nearbyError;
   List<CarPark> _nearbyCarParks = [];
@@ -286,12 +316,15 @@ class _HomePageState extends State<HomePage> {
         permission = await Geolocator.requestPermission();
       }
 
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         throw Exception('Location permission denied.');
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       final results = await _searchService.searchWithinRadius(
@@ -334,7 +367,9 @@ class _HomePageState extends State<HomePage> {
     return showModalBottomSheet<CarPark>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
@@ -347,11 +382,17 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     width: 42,
                     height: 4,
-                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(999)),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('Choose a car park', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Choose a car park',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 12),
                 Flexible(
                   child: ListView.separated(
@@ -366,7 +407,10 @@ class _HomePageState extends State<HomePage> {
 
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(backgroundColor: const Color(0xFF008752), child: Text('${index + 1}')),
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFF008752),
+                          child: Text('${index + 1}'),
+                        ),
                         title: Text(carPark.name),
                         subtitle: Text(
                           '${carPark.distance.toStringAsFixed(1)} km away'
@@ -389,8 +433,11 @@ class _HomePageState extends State<HomePage> {
     final durationController = TextEditingController(text: '60');
     String? errorText;
     final price =
-        (carPark.rawData['price'] as num?)?.toDouble() ?? (carPark.rawData['hourly_rate'] as num?)?.toDouble();
-    final spaces = (carPark.rawData['spaces'] as num?)?.toInt() ?? (carPark.rawData['space_count'] as num?)?.toInt();
+        (carPark.rawData['price'] as num?)?.toDouble() ??
+        (carPark.rawData['hourly_rate'] as num?)?.toDouble();
+    final spaces =
+        (carPark.rawData['spaces'] as num?)?.toInt() ??
+        (carPark.rawData['space_count'] as num?)?.toInt();
 
     final duration = await showDialog<Duration>(
       context: context,
@@ -432,19 +479,36 @@ class _HomePageState extends State<HomePage> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      ActionChip(label: const Text('30 min'), onPressed: () => setPresetMinutes(30)),
-                      ActionChip(label: const Text('60 min'), onPressed: () => setPresetMinutes(60)),
-                      ActionChip(label: const Text('90 min'), onPressed: () => setPresetMinutes(90)),
-                      ActionChip(label: const Text('2 hrs'), onPressed: () => setPresetMinutes(120)),
+                      ActionChip(
+                        label: const Text('30 min'),
+                        onPressed: () => setPresetMinutes(30),
+                      ),
+                      ActionChip(
+                        label: const Text('60 min'),
+                        onPressed: () => setPresetMinutes(60),
+                      ),
+                      ActionChip(
+                        label: const Text('90 min'),
+                        onPressed: () => setPresetMinutes(90),
+                      ),
+                      ActionChip(
+                        label: const Text('2 hrs'),
+                        onPressed: () => setPresetMinutes(120),
+                      ),
                     ],
                   ),
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
                 FilledButton(
                   onPressed: () {
-                    final minutes = int.tryParse(durationController.text.trim());
+                    final minutes = int.tryParse(
+                      durationController.text.trim(),
+                    );
                     if (minutes == null || minutes <= 0) {
                       setDialogState(() {
                         errorText = 'Enter a valid number of minutes';
@@ -486,13 +550,17 @@ class _HomePageState extends State<HomePage> {
     final commentController = TextEditingController();
     String? commentError;
 
-    final targetCarPark = widget.selectedCarPark ?? (_nearbyCarParks.isNotEmpty ? _nearbyCarParks.first : null);
+    final targetCarPark =
+        widget.selectedCarPark ??
+        (_nearbyCarParks.isNotEmpty ? _nearbyCarParks.first : null);
     final targetName = targetCarPark?.name ?? 'this car park';
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -504,7 +572,11 @@ class _HomePageState extends State<HomePage> {
                     rating = index + 1;
                   });
                 },
-                icon: Icon(Icons.star, size: 34, color: filled ? Colors.amber : Colors.grey.shade300),
+                icon: Icon(
+                  Icons.star,
+                  size: 34,
+                  color: filled ? Colors.amber : Colors.grey.shade300,
+                ),
               );
             }
 
@@ -532,11 +604,20 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text('Review $targetName', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Review $targetName',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       const Text('Choose a star rating and leave a comment.'),
                       const SizedBox(height: 20),
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(5, buildStar)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(5, buildStar),
+                      ),
                       const SizedBox(height: 8),
                       Center(
                         child: Text(
@@ -569,9 +650,11 @@ class _HomePageState extends State<HomePage> {
                         child: FilledButton(
                           onPressed: () async {
                             if (targetCarPark == null) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(const SnackBar(content: Text('Error: No car park selected')));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Error: No car park selected'),
+                                ),
+                              );
                               Navigator.of(sheetContext).pop();
                               return;
                             }
@@ -599,21 +682,32 @@ class _HomePageState extends State<HomePage> {
 
                               if (!context.mounted) return;
 
-                              if (response.statusCode == 200 || response.statusCode == 201) {
+                              if (response.statusCode == 200 ||
+                                  response.statusCode == 201) {
                                 Navigator.of(sheetContext).pop();
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(SnackBar(content: Text('Thanks for reviewing $targetName')));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Thanks for reviewing $targetName',
+                                    ),
+                                  ),
+                                );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to submit review: ${response.statusCode}')),
+                                  SnackBar(
+                                    content: Text(
+                                      'Failed to submit review: ${response.statusCode}',
+                                    ),
+                                  ),
                                 );
                               }
                             } catch (e) {
                               if (!context.mounted) return;
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(SnackBar(content: Text('Error submitting review: $e')));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error submitting review: $e'),
+                                ),
+                              );
                             }
                           },
                           child: const Text('Submit review'),
@@ -635,7 +729,11 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Home'), backgroundColor: Colors.white, elevation: 1),
+      appBar: AppBar(
+        title: const Text('Home'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
@@ -644,7 +742,10 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: const [
                 CircularActionButton(icon: Icons.electric_car, label: 'EV'),
-                CircularActionButton(icon: Icons.accessible, label: 'Accessible'),
+                CircularActionButton(
+                  icon: Icons.accessible,
+                  label: 'Accessible',
+                ),
                 CircularActionButton(icon: Icons.umbrella, label: 'Covered'),
                 CircularActionButton(icon: Icons.money, label: '<£10'),
               ],
@@ -652,6 +753,8 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 24),
             ActiveStayWidget(
               remainingTime: widget.remainingTime,
+              remainingDuration: widget.remainingDuration,
+              maxSessionDuration: widget.maxSessionDuration,
               progress: widget.progress,
               isSessionActive: widget.isSessionActive,
               canReviewSession: widget.canReviewSession,
@@ -666,7 +769,10 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 16),
             ],
             const SizedBox(height: 16),
-            const Text('All Car Parks', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'All Car Parks',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Builder(
               builder: (context) {
@@ -684,7 +790,10 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         Text(_nearbyError!),
                         const SizedBox(height: 8),
-                        TextButton(onPressed: _loadNearbyCarParks, child: const Text('Retry')),
+                        TextButton(
+                          onPressed: _loadNearbyCarParks,
+                          child: const Text('Retry'),
+                        ),
                       ],
                     ),
                   );
@@ -709,7 +818,9 @@ class _HomePageState extends State<HomePage> {
                       locationId: 'P$id',
                       name: carPark.name,
                       distance: '${carPark.distance.toStringAsFixed(1)} km',
-                      price: price != null ? '£${price.toStringAsFixed(2)}/hr' : 'Price n/a',
+                      price: price != null
+                          ? '£${price.toStringAsFixed(2)}/hr'
+                          : 'Price n/a',
                     );
                   },
                 );
@@ -726,7 +837,11 @@ class CircularActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const CircularActionButton({super.key, required this.icon, required this.label});
+  const CircularActionButton({
+    super.key,
+    required this.icon,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -746,6 +861,8 @@ class CircularActionButton extends StatelessWidget {
 
 class ActiveStayWidget extends StatelessWidget {
   final String remainingTime;
+  final Duration remainingDuration;
+  final Duration maxSessionDuration;
   final double progress;
   final bool isSessionActive;
   final bool canReviewSession;
@@ -757,6 +874,8 @@ class ActiveStayWidget extends StatelessWidget {
   const ActiveStayWidget({
     super.key,
     required this.remainingTime,
+    required this.remainingDuration,
+    required this.maxSessionDuration,
     required this.progress,
     required this.isSessionActive,
     required this.canReviewSession,
@@ -778,7 +897,9 @@ class ActiveStayWidget extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final dialSize = (constraints.maxWidth * 0.58).clamp(120.0, 180.0).toDouble();
+          final dialSize = (constraints.maxWidth * 0.58)
+              .clamp(120.0, 180.0)
+              .toDouble();
           final title = isSessionActive
               ? 'ACTIVE STAY'
               : canReviewSession
@@ -838,7 +959,11 @@ class ActiveStayWidget extends StatelessWidget {
                   runSpacing: 12,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: onAddThirtyMinutes,
+                      onPressed:
+                          (remainingDuration + const Duration(minutes: 30) <=
+                              maxSessionDuration)
+                          ? onAddThirtyMinutes
+                          : null,
                       icon: const Icon(Icons.add_circle_outline),
                       label: const Text('+30 min'),
                     ),
@@ -846,7 +971,10 @@ class ActiveStayWidget extends StatelessWidget {
                       onPressed: onCancelSession,
                       icon: const Icon(Icons.cancel_outlined),
                       label: const Text('Cancel'),
-                      style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -887,8 +1015,11 @@ class SelectedCarParkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price =
-        (carPark.rawData['price'] as num?)?.toDouble() ?? (carPark.rawData['hourly_rate'] as num?)?.toDouble();
-    final spaces = (carPark.rawData['spaces'] as num?)?.toInt() ?? (carPark.rawData['space_count'] as num?)?.toInt();
+        (carPark.rawData['price'] as num?)?.toDouble() ??
+        (carPark.rawData['hourly_rate'] as num?)?.toDouble();
+    final spaces =
+        (carPark.rawData['spaces'] as num?)?.toInt() ??
+        (carPark.rawData['space_count'] as num?)?.toInt();
 
     return Container(
       width: double.infinity,
@@ -903,15 +1034,25 @@ class SelectedCarParkCard extends StatelessWidget {
         children: [
           const Text(
             'Selected car park',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF008752)),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF008752),
+            ),
           ),
           const SizedBox(height: 8),
-          Text(carPark.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            carPark.name,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 6),
           Text('${carPark.distance.toStringAsFixed(1)} km away'),
           const SizedBox(height: 4),
           Text(price != null ? '£${price.toStringAsFixed(2)}/hr' : 'Price n/a'),
-          if (spaces != null) ...[const SizedBox(height: 4), Text('$spaces spaces available')],
+          if (spaces != null) ...[
+            const SizedBox(height: 4),
+            Text('$spaces spaces available'),
+          ],
         ],
       ),
     );
@@ -943,10 +1084,16 @@ class PremiumCard extends StatelessWidget {
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Text(
             locationId,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
         title: Text(name),
