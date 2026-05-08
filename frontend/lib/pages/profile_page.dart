@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:parkingapp/user_addition/user_add.dart';
 import 'package:parkingapp/user_addition/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Profile Tab Content
 class ProfileTabContent extends StatefulWidget {
@@ -21,6 +22,56 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
   late String _userEmail;
   late String _updateLookupEmail;
   bool _isUpdating = false;
+  late SharedPreferences _prefs;
+
+  Future<void> _saveVehicles() async {
+    final vehiclesJson = _vehicles
+        .map(
+          (v) => '${v['nickname']}|${v['vrm']}|${v['type']}|${v['vehicle_id']}',
+        )
+        .toList();
+    await _prefs.setStringList('vehicles', vehiclesJson);
+  }
+
+  Future<void> _loadVehiclesFromStorage() async {
+    final vehiclesJson = _prefs.getStringList('vehicles') ?? [];
+    final vehicles = vehiclesJson.map((v) {
+      final parts = v.split('|');
+      return {
+        'nickname': parts[0],
+        'vrm': parts[1],
+        'type': parts[2],
+        'vehicle_id': parts[3],
+      };
+    }).toList();
+    if (mounted) {
+      setState(() {
+        _vehicles.clear();
+        _vehicles.addAll(vehicles);
+      });
+    }
+  }
+
+  Future<void> _savePaymentMethods() async {
+    final paymentsJson = _paymentMethods
+        .map((p) => '${p['type']}|${p['last4']}|${p['expiry']}')
+        .toList();
+    await _prefs.setStringList('payment_methods', paymentsJson);
+  }
+
+  Future<void> _loadPaymentMethodsFromStorage() async {
+    final paymentsJson = _prefs.getStringList('payment_methods') ?? [];
+    final payments = paymentsJson.map((p) {
+      final parts = p.split('|');
+      return {'type': parts[0], 'last4': parts[1], 'expiry': parts[2]};
+    }).toList();
+    if (mounted) {
+      setState(() {
+        _paymentMethods.clear();
+        _paymentMethods.addAll(payments);
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -28,6 +79,13 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
     _userName = '${widget.session.name} ${widget.session.lastname}'.trim();
     _userEmail = widget.session.email;
     _updateLookupEmail = widget.session.email;
+    _initializeStorage();
+  }
+
+  Future<void> _initializeStorage() async {
+    _prefs = await SharedPreferences.getInstance();
+    _loadVehiclesFromStorage();
+    _loadPaymentMethodsFromStorage();
     _loadDummyProfile();
   }
 
@@ -643,6 +701,7 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
                                   response['vehicle_id']?.toString() ?? '',
                             });
                           });
+                          _saveVehicles();
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -740,6 +799,7 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
                   vehicle['vrm'] = vrmController.text.toUpperCase();
                   vehicle['type'] = vehicleType;
                 });
+                _saveVehicles();
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Vehicle updated successfully')),
@@ -780,6 +840,7 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
                 setState(() {
                   _vehicles.remove(vehicle);
                 });
+                _saveVehicles();
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Vehicle deleted successfully')),
@@ -906,6 +967,7 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
                       'expiry': expiryController.text,
                     });
                   });
+                  _savePaymentMethods();
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -940,6 +1002,7 @@ class _ProfileTabContentState extends State<ProfileTabContent> {
               setState(() {
                 _paymentMethods.remove(payment);
               });
+              _savePaymentMethods();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
