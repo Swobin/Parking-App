@@ -39,6 +39,10 @@ class FakeTable:
         self.calls.append("eq")
         return self
 
+    def ilike(self, *_args, **_kwargs):
+        self.calls.append("ilike")
+        return self
+
     def execute(self):
         self.calls.append("execute")
         return self._response
@@ -76,7 +80,7 @@ def test_get_user_success(monkeypatch):
         error=None,
     )
     fake_db = FakeSupabase(response)
-    monkeypatch.setattr(am, "get_database_connection", lambda: fake_db)
+    monkeypatch.setattr(am, "get_database_connection_admin", lambda: fake_db)
 
     result = am.getUser("a@b.com")
 
@@ -84,12 +88,12 @@ def test_get_user_success(monkeypatch):
     assert result["email"] == "a@b.com"
     assert result["name"] == "Ana"
     assert result["password_hash"] == "hash"
-    assert fake_db.table_name == "users"
+    assert fake_db.table_name == "User"
 
 
 def test_get_user_not_found(monkeypatch):
     fake_db = FakeSupabase(FakeResponse(data=[], error=None))
-    monkeypatch.setattr(am, "get_database_connection", lambda: fake_db)
+    monkeypatch.setattr(am, "get_database_connection_admin", lambda: fake_db)
 
     result = am.getUser("missing@b.com")
 
@@ -97,8 +101,10 @@ def test_get_user_not_found(monkeypatch):
 
 
 def test_get_user_db_error(monkeypatch):
-    fake_db = FakeSupabase(FakeResponse(data=[], error=FakeError("db failed")))
-    monkeypatch.setattr(am, "get_database_connection", lambda: fake_db)
+    def _raise():
+        raise RuntimeError("db failed")
+
+    monkeypatch.setattr(am, "get_database_connection_admin", _raise)
 
     result = am.getUser("err@b.com")
 
@@ -110,7 +116,7 @@ def test_get_user_exception(monkeypatch):
     def _raise():
         raise RuntimeError("connection failed")
 
-    monkeypatch.setattr(am, "get_database_connection", _raise)
+    monkeypatch.setattr(am, "get_database_connection_admin", _raise)
 
     result = am.getUser("x@y.com")
 
@@ -225,14 +231,14 @@ def test_delete_user_success(monkeypatch):
     )
     monkeypatch.setattr(am, "check_password_hash", lambda _h, _p: True)
     fake_db = FakeSupabase(FakeResponse(data=[{"email": "x@y.com"}], error=None))
-    monkeypatch.setattr(am, "get_database_connection", lambda: fake_db)
+    monkeypatch.setattr(am, "get_database_connection_admin", lambda: fake_db)
 
     body, status = am.deleteUser("x@y.com", "ok")
 
     assert status == 200
     assert body["result"] is True
     assert body["process"] == "Delete User"
-    assert fake_db.table_name == "users"
+    assert fake_db.table_name == "User"
 
 
 def test_delete_user_db_error(monkeypatch):
@@ -248,8 +254,10 @@ def test_delete_user_db_error(monkeypatch):
         },
     )
     monkeypatch.setattr(am, "check_password_hash", lambda _h, _p: True)
-    fake_db = FakeSupabase(FakeResponse(data=[], error=FakeError("delete failed")))
-    monkeypatch.setattr(am, "get_database_connection", lambda: fake_db)
+    def _raise():
+        raise RuntimeError("delete failed")
+
+    monkeypatch.setattr(am, "get_database_connection_admin", _raise)
 
     body, status = am.deleteUser("x@y.com", "ok")
 

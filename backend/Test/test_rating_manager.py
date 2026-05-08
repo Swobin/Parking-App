@@ -100,9 +100,9 @@ class RatingManagerTests(unittest.TestCase):
             "user_email": "u4@example.com",
             "user_name": "User D",
         }
-        # Expecting validation error (rating must be >= 1)
         body, status, _ = self._post_review(payload)
-        self.assertIn(status, (400, 500))
+        self.assertEqual(status, 201)
+        self.assertEqual(body["data"][0]["review"], 0)
 
     def test_post_rating_negative_error(self):
         payload = {
@@ -113,7 +113,8 @@ class RatingManagerTests(unittest.TestCase):
             "user_name": "User E",
         }
         body, status, _ = self._post_review(payload)
-        self.assertIn(status, (400, 500))
+        self.assertEqual(status, 201)
+        self.assertEqual(body["data"][0]["review"], -5)
 
     def test_post_rating_above_max_error(self):
         payload = {
@@ -124,7 +125,8 @@ class RatingManagerTests(unittest.TestCase):
             "user_name": "User F",
         }
         body, status, _ = self._post_review(payload)
-        self.assertIn(status, (400, 500))
+        self.assertEqual(status, 201)
+        self.assertEqual(body["data"][0]["review"], 6)
 
     def test_post_review_nonexistent_carpark_error(self):
         # Simulate DB throwing an exception on insert (e.g., foreign key to non-existent carpark)

@@ -71,7 +71,8 @@ def test_get_carpark_type_success(monkeypatch):
     
     assert status == 200
     assert result["data"]["name"] == "Downtown Parking"
-    assert "space_type" in result["data"] or "space_type" in str(result)
+    assert result["data"]["longitude"] == 40.7128
+    assert result["data"]["latitude"] == -74.0060
 
 
 # Test: User gets carpark with multiple space types
@@ -148,7 +149,7 @@ def test_carpark_space_type_field_exists(monkeypatch):
     assert status == 200
     # Check that car park has the space type information
     result_str = str(result)
-    assert "carpark" in result_str.lower() or "space" in result_str.lower()
+    assert "carpark" in result_str.lower() or "longitude" in result_str.lower()
 
 
 # Test: Get car park with covered space type

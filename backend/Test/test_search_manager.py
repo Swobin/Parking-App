@@ -55,11 +55,11 @@ class SearchManagerTests(unittest.TestCase):
         self.assertFalse(within_range(11, 0, 10))
 
     def test_extract_distance_uses_existing_distance_first(self):
-        car_park = {"distance": "4.2"}
+        car_park = {"location": "4.2"}
         self.assertEqual(extract_distance(car_park, 0, 0), 4.2)
 
     def test_extract_distance_computes_distance_when_coordinates_exist(self):
-        car_park = {"longitude": 0.1, "latitude": 0.1}
+        car_park = {"location": {"coordinates": [0.1, 0.1]}}
         distance = extract_distance(car_park, 0.0, 0.0)
         self.assertIsNotNone(distance)
         self.assertGreater(distance, 0)
@@ -69,32 +69,23 @@ class SearchManagerTests(unittest.TestCase):
             {
                 "carpark_id": 1,
                 "name": "Gunwharf Quays",
-                "price": 6.0,
-                "avg_rating": 4.5,
-                "longitude": -1.091,
-                "latitude": 50.796,
+                "location": {"coordinates": [-1.091, 50.796]},
             },
             {
                 "carpark_id": 2,
                 "name": "Far Away Parking",
-                "price": 3.0,
-                "avg_rating": 4.8,
-                "longitude": -2.5,
-                "latitude": 51.5,
+                "location": {"coordinates": [-2.5, 51.5]},
             },
             {
                 "carpark_id": 3,
                 "name": "Gunwharf Budget",
-                "price": 20.0,
-                "avg_rating": 4.9,
-                "longitude": -1.091,
-                "latitude": 50.796,
+                "location": {"coordinates": [-1.091, 50.796]},
             },
         ]
 
-        with patch.object(search_manager, "get_database_connection", return_value=FakeSupabaseClient(sample_data)):
+        with patch.object(search_manager, "get_database_connection_admin", return_value=FakeSupabaseClient(sample_data)):
             with self.app.test_request_context(
-                "/search?query=gunwharf&minPrice=0&maxPrice=10&minRating=4&maxRating=5&minDistance=0&maxDistance=5&longitude=-1.091&latitude=50.796"
+                "/search?query=gunwharf quays&minDistance=0&maxDistance=5&longitude=-1.091&latitude=50.796"
             ):
                 result, status_code = self.manager.get()
 
@@ -104,12 +95,12 @@ class SearchManagerTests(unittest.TestCase):
 
     def test_get_rejects_invalid_price_range(self):
         with self.app.test_request_context(
-            "/search?query=test&minPrice=10&maxPrice=5&minRating=0&maxRating=5&minDistance=0&maxDistance=10&longitude=0&latitude=0"
+            "/search?query=test&minDistance=10&maxDistance=5&longitude=0&latitude=0"
         ):
             result, status_code = self.manager.get()
 
         self.assertEqual(status_code, 400)
-        self.assertIn("minPrice cannot be greater than maxPrice", result["error"])
+        self.assertIn("minDistance cannot be greater than maxDistance", result["error"])
 
 
 if __name__ == "__main__":

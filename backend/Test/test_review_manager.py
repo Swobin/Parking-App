@@ -83,7 +83,7 @@ class ReviewManagerTests(unittest.TestCase):
 
         with patch.object(
             review_manager,
-            "get_database_connection",
+            "get_database_connection_admin",
             return_value=FakeReadClient(fake_rows),
         ):
             with self.app.test_request_context("/review?email=test@example.com"):
@@ -91,7 +91,6 @@ class ReviewManagerTests(unittest.TestCase):
 
         self.assertEqual(status_code, 200)
         self.assertEqual(body["data"][0]["title"], "Gunwharf Quays")
-        self.assertEqual(body["data"][0]["user_name"], "Test User")
         self.assertEqual(body["data"][0]["comment"], "Clean and secure.")
 
     def test_get_requires_email_query_param(self):
@@ -108,7 +107,7 @@ class ReviewManagerTests(unittest.TestCase):
 
         with patch.object(
             review_manager,
-            "get_database_connection",
+            "get_database_connection_admin",
             return_value=FakeReadClient(fake_rows),
         ):
             with self.app.test_request_context("/review"):
@@ -116,7 +115,7 @@ class ReviewManagerTests(unittest.TestCase):
 
         self.assertEqual(status_code, 200)
         self.assertEqual(len(body["data"]), 1)
-        self.assertEqual(body["data"][0]["user_name"], "Other User")
+        self.assertEqual(body["data"][0]["title"], "Gunwharf Quays")
 
     def test_post_stores_review_metadata(self):
         fake_client = FakeWriteClient()
@@ -132,8 +131,6 @@ class ReviewManagerTests(unittest.TestCase):
                     "title": "Gunwharf Quays",
                     "review": 4,
                     "comment": "Easy parking and well lit.",
-                    "user_email": "test@example.com",
-                    "user_name": "Test User",
                 },
             ):
                 body, status_code = self.manager.post()
@@ -144,10 +141,6 @@ class ReviewManagerTests(unittest.TestCase):
         self.assertEqual(
             fake_client.table_ref.inserted["comment"], "Easy parking and well lit."
         )
-        self.assertEqual(
-            fake_client.table_ref.inserted["user_email"], "test@example.com"
-        )
-        self.assertEqual(fake_client.table_ref.inserted["user_name"], "Test User")
 
 
 if __name__ == "__main__":

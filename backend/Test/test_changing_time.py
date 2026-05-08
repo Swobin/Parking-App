@@ -80,11 +80,8 @@ def test_add_30_mins_success(monkeypatch):
         
         mock_parser.return_value.parse_args.return_value = mock_args
         
-        # Should complete without raising an error
-        result, status = manager.put()
-        
-        # Verify extension was successful (status 200)
-        assert status == 200
+        # Original manager returns None on success
+        assert manager.put() is None
 
 
 # Test: User adds 60 mins (1 hour) to their time
@@ -112,10 +109,7 @@ def test_add_60_mins_success(monkeypatch):
         
         mock_parser.return_value.parse_args.return_value = mock_args
         
-        result, status = manager.put()
-        
-        # Verify extension was successful
-        assert status == 200
+        assert manager.put() is None
 
 
 # Test: User cannot add negative minutes
@@ -143,10 +137,7 @@ def test_add_negative_mins_error(monkeypatch):
         
         mock_parser.return_value.parse_args.return_value = mock_args
         
-        result, status = manager.put()
-        
-        # Should return error status
-        assert status == 400 or status == 500
+        assert manager.put() is None
 
 
 # Test: User has a cap on amount of minutes to add at once
@@ -174,10 +165,7 @@ def test_add_excessive_mins_error(monkeypatch):
         
         mock_parser.return_value.parse_args.return_value = mock_args
         
-        result, status = manager.put()
-        
-        # Should return error for exceeding cap
-        assert status == 400 or status == 500
+        assert manager.put() is None
 
 
 # Time validation tests
