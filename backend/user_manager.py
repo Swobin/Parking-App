@@ -216,6 +216,9 @@ def update_user(name, lastname, email=None, updated_email=None, vehicles=None, p
     if response or response.data:
         return {
             "process": "Update User",
+            "user_id": response.data[0].get("user_id"),
+            "name": name,
+            "lastname": lastname,
             "email": updated_email or email,
             "result": True,
             }, 200
@@ -238,6 +241,14 @@ def update_user(name, lastname, email=None, updated_email=None, vehicles=None, p
                     "type": vehicle_type,
                 }
             ).execute()
+            return {
+                "process": "Update User",
+                "user_id": user_id,
+                "name": name,
+                "lastname": lastname,
+                "email": updated_email or email,
+                "result": True,
+            }, 200
 
 
     return {
