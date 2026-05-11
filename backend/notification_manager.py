@@ -4,8 +4,7 @@ from datetime import datetime, timedelta
 class NotificationManager:
     """Minimal notification manager used for unit testing notification logic.
 
-    This is intentionally lightweight and in-memory so tests can run without
-    external services. It models scheduling a 5-minute warning and clearing
+    in-memory so tests can run without external services. It models scheduling a 5-minute warning and clearing
     notifications when the user ends a session.
     """
 
