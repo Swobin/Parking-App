@@ -21,6 +21,7 @@ class DummyResponse:
 class FakeTable:
     def __init__(self, response=None):
         self._response = response or DummyResponse()
+        self._inserted = None
 
     def select(self, *args, **kwargs):
         return self
@@ -32,8 +33,14 @@ class FakeTable:
         return self
 
     def insert(self, payload):
-        # simulate returning inserted row
-        return DummyResponse(data=[payload])
+        # simulate returning inserted row and allow chaining to execute()
+        self._inserted = payload
+        self._response = DummyResponse(data=[payload])
+        return self
+
+    def update(self, payload):
+        self._response = DummyResponse(data=[{"user_id": 77}])
+        return self
 
     def delete(self):
         return self
@@ -69,7 +76,7 @@ def test_normalise_vehicle_type_variants():
 def test_get_user_success(monkeypatch):
     fake_user = {"result": True, "user_id": 7, "first_name": "A", "last_name": "B", "email": "a@b.com", "payment_token": '[{"id":"tok_1"}]'}
 
-    monkeypatch.setattr(am, "getUser", lambda email=None: fake_user)
+    monkeypatch.setattr(um, "auth_getUser", lambda email=None: fake_user)
 
     vehicle_rows = [{"vehicle_id": 1, "registration": "ABC123", "type": "CAR"}]
     fake_db = FakeClient(DummyResponse(data=vehicle_rows))
@@ -83,14 +90,14 @@ def test_get_user_success(monkeypatch):
 
 
 def test_get_user_not_found(monkeypatch):
-    monkeypatch.setattr(am, "getUser", lambda email=None: {"result": False})
+    monkeypatch.setattr(um, "auth_getUser", lambda email=None: {"result": False})
     body, status = um.get_user("missing@x.com")
     assert status == 404
     assert body["result"] is False
 
 
 def test_add_vehicle_success(monkeypatch):
-    monkeypatch.setattr(am, "getUser", lambda email=None: {"result": True, "user_id": 5})
+    monkeypatch.setattr(um, "auth_getUser", lambda email=None: {"result": True, "user_id": 5})
     fake_admin = FakeAdminClient()
     monkeypatch.setattr(user_manager, "get_database_connection_admin", lambda: fake_admin)
 
@@ -101,7 +108,7 @@ def test_add_vehicle_success(monkeypatch):
 
 
 def test_add_vehicle_invalid_registration(monkeypatch):
-    monkeypatch.setattr(am, "getUser", lambda email=None: {"result": True, "user_id": 5})
+    monkeypatch.setattr(um, "auth_getUser", lambda email=None: {"result": True, "user_id": 5})
     fake_admin = FakeAdminClient()
     monkeypatch.setattr(user_manager, "get_database_connection_admin", lambda: fake_admin)
 
@@ -111,7 +118,7 @@ def test_add_vehicle_invalid_registration(monkeypatch):
 
 
 def test_delete_vehicle_success(monkeypatch):
-    monkeypatch.setattr(am, "getUser", lambda email=None: {"result": True, "user_id": 9})
+    monkeypatch.setattr(um, "auth_getUser", lambda email=None: {"result": True, "user_id": 9})
     fake_admin = FakeAdminClient(DummyResponse(data=[]))
     monkeypatch.setattr(user_manager, "get_database_connection_admin", lambda: fake_admin)
 
