@@ -7,7 +7,7 @@ BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, os.pardir))
 if BACKEND_DIR not in sys.path:
 	sys.path.insert(0, BACKEND_DIR)
 
-import notification_manager as nm
+import backend.Test.notification_manager as nm
 
 
 def test_schedule_5_min_warning():
